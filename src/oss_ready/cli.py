@@ -31,6 +31,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Exit with status 1 if the readiness score is below SCORE.",
     )
+    parser.add_argument(
+        "--ignore-markdown",
+        action="append",
+        default=[],
+        metavar="GLOB",
+        help="Skip Markdown files matching a repo-relative glob. Can be used more than once.",
+    )
     return parser
 
 
@@ -90,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     path = Path(args.path).expanduser().resolve()
 
     try:
-        report = scan_repository(path)
+        report = scan_repository(path, markdown_ignore_patterns=args.ignore_markdown)
     except FileNotFoundError as exc:
         print(f"oss-ready: {exc}", file=sys.stderr)
         return 2
@@ -106,4 +113,3 @@ def main(argv: list[str] | None = None) -> int:
     if args.fail_under is not None and report.score < args.fail_under:
         return 1
     return 0
-

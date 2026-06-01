@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import re
 import urllib.parse
+from fnmatch import fnmatch
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 
 LINK_RE = re.compile(r"(!)?\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
@@ -30,12 +31,19 @@ class MarkdownLink:
     is_image: bool
 
 
-def iter_markdown_files(root: Path) -> Iterable[Path]:
+def iter_markdown_files(root: Path, ignore_patterns: Sequence[str] | None = None) -> Iterable[Path]:
     ignored = {".git", ".hg", ".svn", ".venv", "venv", "node_modules", "dist", "build"}
     for path in root.rglob("*.md"):
         if ignored.intersection(path.parts):
             continue
+        if is_ignored_by_pattern(root, path, ignore_patterns or []):
+            continue
         yield path
+
+
+def is_ignored_by_pattern(root: Path, path: Path, ignore_patterns: Sequence[str]) -> bool:
+    rel_path = path.relative_to(root).as_posix()
+    return any(fnmatch(rel_path, pattern) or fnmatch(path.name, pattern) for pattern in ignore_patterns)
 
 
 def slugify_heading(text: str) -> str:
@@ -96,9 +104,9 @@ def normalize_local_target(source: Path, target: str) -> tuple[Path, str | None]
     return path, anchor
 
 
-def check_markdown(root: Path) -> list[MarkdownIssue]:
+def check_markdown(root: Path, ignore_patterns: Sequence[str] | None = None) -> list[MarkdownIssue]:
     issues: list[MarkdownIssue] = []
-    markdown_files = list(iter_markdown_files(root))
+    markdown_files = list(iter_markdown_files(root, ignore_patterns=ignore_patterns))
     anchors = {path.resolve(): collect_heading_anchors(path) for path in markdown_files}
 
     for path in markdown_files:
@@ -160,4 +168,3 @@ def check_markdown_style(path: Path) -> list[MarkdownIssue]:
             in_fence = False
             fence_marker = ""
     return issues
-

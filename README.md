@@ -46,6 +46,12 @@ Write machine-readable output:
 oss-ready . --json
 ```
 
+Skip generated Markdown files:
+
+```bash
+oss-ready . --ignore-markdown "docs/generated/**" --ignore-markdown CHANGELOG.md
+```
+
 Example output:
 
 ```text
@@ -91,7 +97,8 @@ PYTHONPATH=src python3 -m oss_ready . --fail-under 80
 
 The scoring model is deliberately transparent and conservative. A low score is not a moral judgment; it is a checklist of chores before publishing. The Markdown checker only validates local files and anchors, because external link checking is slower, noisier, and less reliable in CI.
 
+Generated Markdown can be skipped with repeatable `--ignore-markdown` globs. Patterns are matched against repo-relative paths and filenames.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).
-

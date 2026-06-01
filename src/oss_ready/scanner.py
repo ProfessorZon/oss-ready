@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from .markdown import MarkdownIssue, check_markdown
 
@@ -31,14 +32,14 @@ class Report:
         return sum(check.max_points for check in self.checks)
 
 
-def scan_repository(path: Path) -> Report:
+def scan_repository(path: Path, markdown_ignore_patterns: Sequence[str] | None = None) -> Report:
     root = path.resolve()
     if not root.exists():
         raise FileNotFoundError(f"path does not exist: {root}")
     if not root.is_dir():
         raise NotADirectoryError(f"path is not a directory: {root}")
 
-    markdown_issues = check_markdown(root)
+    markdown_issues = check_markdown(root, ignore_patterns=markdown_ignore_patterns)
     checks = [
         check_readme(root),
         check_license(root),
@@ -175,4 +176,3 @@ def warn(id: str, label: str, max_points: int, points: int, message: str) -> Che
 
 def fail(id: str, label: str, max_points: int, message: str) -> CheckResult:
     return CheckResult(id, label, "fail", 0, max_points, message)
-

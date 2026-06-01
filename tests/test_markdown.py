@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from oss_ready.markdown import check_markdown, slugify_heading
+from oss_ready.markdown import check_markdown, iter_markdown_files, slugify_heading
 
 
 class MarkdownTests(unittest.TestCase):
@@ -47,7 +47,20 @@ class MarkdownTests(unittest.TestCase):
             self.assertIn("image is missing alt text", messages)
             self.assertIn("fenced code block has no language", messages)
 
+    def test_ignore_patterns_skip_generated_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            generated = root / "docs" / "generated"
+            generated.mkdir(parents=True)
+            (root / "README.md").write_text("# Project\n", encoding="utf-8")
+            (generated / "api.md").write_text("[missing](missing.md)\n", encoding="utf-8")
+
+            files = list(iter_markdown_files(root, ignore_patterns=["docs/generated/**"]))
+            issues = check_markdown(root, ignore_patterns=["docs/generated/**"])
+
+            self.assertEqual(files, [root / "README.md"])
+            self.assertEqual(issues, [])
+
 
 if __name__ == "__main__":
     unittest.main()
-
